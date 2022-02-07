@@ -24,29 +24,49 @@
       <div slot="nav-right"
            class="placeholder"></div>
       <div slot="nav-right"
+           @click="isChennelEditShow=true"
            class="hamburger-btn">
         <i class="iconfont icon-gengduo"></i>
       </div>
     </van-tabs>
+
+    <!-- 弹出层 -->
+    <van-popup v-model="isChennelEditShow"
+               closeable
+               position="bottom"
+               close-icon-position="top-left"
+               :style="{ height: '100%' }">
+      <ChannelEdit :myChannels="channels"
+                   :active="active"
+                   @update-active="onUpdateActive" />
+    </van-popup>
   </div>
 </template>
 
 <script>
 import { getUserChannels } from '@/api/user'
 import ArticleList from './components/articleList.vue'
+import ChannelEdit from './components/channel-edit.vue'
+import { mapState } from 'vuex'
+import { getItem } from '@/utils/storage'
 export default {
   name: '',
-  components: { ArticleList },
+  components: {
+    ArticleList,
+    ChannelEdit
+  },
   props: {},
   data () {
     return {
       active: 0,
-      channels: []
-
+      channels: [],
+      isChennelEditShow: false
     }
   },
   watch: {},
-  computed: {},
+  computed: {
+    ...mapState(['user'])
+  },
   created () { },
   mounted () {
     this.getUserChannels()
@@ -54,12 +74,28 @@ export default {
   methods: {
     async getUserChannels () {
       try {
-        const { data } = await getUserChannels()
-        this.channels = data.data.channels
+        let channels = []
+        if (this.user) {
+          const { data } = await getUserChannels()
+          channels = data.data.channels
+        } else {
+          const localChannels = getItem('NEWS_CHANNELS')
+          if (localChannels) {
+            channels = localChannels
+          } else {
+            const { data } = await getUserChannels()
+            channels = data.data.channels
+          }
+        }
+        this.channels = channels
       } catch (e) {
         // console.log(e)
         this.$toast('获取失败')
       }
+    },
+    onUpdateActive (index, isChennelEditShow = true) {
+      this.active = index
+      this.isChennelEditShow = isChennelEditShow
     }
   }
 }
